@@ -40,7 +40,7 @@ TEXT_COLOR = {
         }
 
 # Defines
-SIDES = 4
+SIDES = 3
 PADDING = 20
 SCALING = 16
 FONT_OFFSET = 15
@@ -58,14 +58,27 @@ class Tile:
         self.value = value
         self.dest = self.pos
         self.old_value = value
-        self.distance = 0
         self.size = 0
-        self.update = False
+
+    def check_neighbor(self, tiles):
+        if self.value == 0:
+            return True
+        else:
+            x = int(self.dest.x)
+            y = int(self.dest.y)
+            if x > 0 and (tiles[x - 1][y].value == 0 or tiles[x - 1][y].value == self.value):
+                return True
+            if x < SIDES - 1 and (tiles[x + 1][y].value == 0 or tiles[x + 1][y].value == self.value):
+                return True
+            if y > 0 and (tiles[x][y - 1].value == 0 or tiles[x][y - 1].value == self.value):
+                return True
+            if y < SIDES - 1 and (tiles[x][y + 1].value == 0 or tiles[x][y + 1].value == self.value):
+                return True
+            return False
 
     def move(self, dx, dy, double):
         self.dest.x = dx
         self.dest.y = dy
-        self.distance = self.pos.distance_to(self.dest)
         if double:
             self.old_value = self.value
             self.value *= 2
@@ -97,7 +110,6 @@ class Tile:
 
             # Tile Position
             self.pos = self.pos.lerp(self.dest, SPEED)
-            # self.pos = self.dest
 
             # Tile Value
             if self.pos.distance_to(self.dest) < DISTANCE_THRESHOLD:
@@ -120,6 +132,58 @@ def new_game():
 
     return tiles, 0
 
+# Game Over
+def is_game_over(tiles, score):
+    for x in range(SIDES):
+        for y in range(SIDES):
+            if tiles[x][y].check_neighbor(tiles):
+                return False, None
+
+    surface = pygame.Surface(screen.get_size())
+    surface.fill((255, 255, 255))
+
+    font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES + 1), bold=True)
+    text_surf = font.render('GAME OVER!', True, (0, 0, 0))
+    text_rect = text_surf.get_rect()
+    text_rect.midbottom = surface.get_rect().center
+    text_rect.bottom -= 20
+    surface.blit(text_surf, text_rect)
+
+    font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES - 1), bold=True)
+    text_surf = font.render('SCORE: ' + str(score), True, (0, 0, 0))
+    text_rect = text_surf.get_rect()
+    text_rect.midtop = surface.get_rect().center
+    text_rect.bottom += 20
+    surface.blit(text_surf, text_rect)
+
+    return True, surface
+
+# Game Won
+def is_game_won(tiles, score):
+    for x in range(SIDES):
+        for y in range(SIDES):
+            if tiles[x][y].value == 16:
+                surface = pygame.Surface(screen.get_size())
+                surface.fill(TILE_COLOR['2048'])
+
+                font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES + 1), bold=True)
+                text_surf = font.render('YOU WON!', True, TEXT_COLOR['2048'])
+                text_rect = text_surf.get_rect()
+                text_rect.midbottom = surface.get_rect().center
+                text_rect.bottom -= 20
+                surface.blit(text_surf, text_rect)
+
+                font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES - 1), bold=True)
+                text_surf = font.render('SCORE: ' + str(score), True, TEXT_COLOR['2048'])
+                text_rect = text_surf.get_rect()
+                text_rect.midtop = surface.get_rect().center
+                text_rect.bottom += 20
+                surface.blit(text_surf, text_rect)
+
+                return True, surface
+
+    return False, None
+
 # New Tile
 def new_tile(tiles):
     while True:
@@ -134,7 +198,7 @@ def new_tile(tiles):
 
 # Scroll Tiles
 def vertical(tiles, min_y, max_y, direction):
-    stuck = True 
+    update = False
     score = 0
     dump = []
     for y in range(min_y, max_y, -direction):
@@ -159,12 +223,12 @@ def vertical(tiles, min_y, max_y, direction):
                     dump.append(tiles[x][dy])
                     tiles[x][dy], points = tiles[x][y].move(x, dy, double)
                     tiles[x][y] = Tile(x, y, 0)
-                    stuck = False
+                    update = True
                     score += points
-    return stuck, tiles, dump, score
+    return update, tiles, dump, score
 
 def horizontal(tiles, min_x, max_x, direction):
-    stuck = True
+    update = False
     score = 0
     dump = []
     for x in range (min_x, max_x, -direction):
@@ -188,9 +252,9 @@ def horizontal(tiles, min_x, max_x, direction):
                     dump.append(tiles[dx][y])
                     tiles[dx][y], points = tiles[x][y].move(dx, y, double)
                     tiles[x][y] = Tile(x, y, 0)
-                    stuck = False
+                    update = True
                     score += points
-    return stuck, tiles, dump, score
+    return update, tiles, dump, score
 
 # Print Tiles
 def print_tiles(tiles):
@@ -214,6 +278,11 @@ clock = pygame.time.Clock()
 
 # New game
 tiles, score = new_game()
+game_over = False
+won = False
+win_screen = False
+
+alpha = 0
 dump = []
 
 # Game Loop
@@ -228,44 +297,54 @@ while running:
             running = False
 
         elif event.type == KEYDOWN:
-            stuck = True
+            update = False
             dump.clear()
 
             if event.key == pygame.K_RETURN:
                 tiles, score = new_game()
-
-            elif event.key == pygame.K_SPACE:
-                pass
+                game_over = False
+                won = False
+                win_screen = False
+                alpha = 0
 
             elif event.key == pygame.K_UP:
                 min_y = 1
                 max_y = SIDES
                 direction = -1
-                stuck, tiles, dump, points = vertical(tiles, min_y, max_y, direction)
+                update, tiles, dump, points = vertical(tiles, min_y, max_y, direction)
 
             elif event.key == pygame.K_DOWN:
                 min_y = SIDES - 2
                 max_y = -1
                 direction = 1
-                stuck, tiles, dump, points = vertical(tiles, min_y, max_y, direction)
+                update, tiles, dump, points = vertical(tiles, min_y, max_y, direction)
 
             elif event.key == pygame.K_LEFT:
                 min_x = 1
                 max_x = SIDES
                 direction = -1
-                stuck, tiles, dump, points = horizontal(tiles, min_x, max_x, direction)
+                update, tiles, dump, points = horizontal(tiles, min_x, max_x, direction)
     
             elif event.key == pygame.K_RIGHT:
                 min_x = SIDES - 2
                 max_x = -1
                 direction = 1
-                stuck, tiles, dump, points = horizontal(tiles, min_x, max_x, direction)
+                update, tiles, dump, points = horizontal(tiles, min_x, max_x, direction)
             else:
                 continue
 
-            if not stuck:
+            if update:
                 tiles = new_tile(tiles)
                 score += points
+                won, over_screen = is_game_won(tiles, score)
+                if win_screen:
+                    won = False
+                else:
+                    win_screen = won
+
+                if not won:
+                    game_over, over_screen = is_game_over(tiles, score)
+                update = False
 
         else:
             continue
@@ -284,6 +363,11 @@ while running:
     for x in range(SIDES):
         for y in range(SIDES):
             tiles[x][y].draw(screen, cell_size)
+
+    if won or game_over:
+        alpha += (240 - alpha) * 0.05
+        over_screen.set_alpha(alpha)
+        screen.blit(over_screen, (0, 0))
 
     pygame.display.flip()
 
