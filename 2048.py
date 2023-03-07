@@ -42,6 +42,7 @@ TEXT_COLOR = {
 # Defines
 SIDES = 4
 PADDING = 20
+RADIUS = 0
 SCALING = 16
 FONT_OFFSET = 15
 FPS = 60
@@ -101,7 +102,7 @@ class Tile:
 
             # Tile Text
             text = str(self.old_value)
-            pygame.draw.rect(tile, TILE_COLOR[text], tile_rect, border_radius=10)
+            pygame.draw.rect(tile, TILE_COLOR[text], tile_rect, border_radius=RADIUS)
             font = pygame.font.SysFont('Google Sans', int(self.size * 0.8 - FONT_OFFSET * (len(text) - 1)), bold=True)
             text_surf = font.render(text, True, TEXT_COLOR[text])
             text_rect = text_surf.get_rect()
@@ -354,7 +355,7 @@ while running:
     for x in range(SIDES):
         for y in range(SIDES):
             rect = pygame.Rect(PADDING + x * (cell_size + PADDING), PADDING + y * (cell_size + PADDING), cell_size, cell_size)
-            pygame.draw.rect(screen, TILE_COLOR['0'], rect, border_radius=10)
+            pygame.draw.rect(screen, TILE_COLOR['0'], rect, border_radius=RADIUS)
 
     # Draw Tiles
     for tile in dump:
