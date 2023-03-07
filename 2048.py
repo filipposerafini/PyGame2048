@@ -40,7 +40,7 @@ TEXT_COLOR = {
         }
 
 # Defines
-SIDES = 3
+SIDES = 4
 PADDING = 20
 SCALING = 16
 FONT_OFFSET = 15
@@ -162,7 +162,7 @@ def is_game_over(tiles, score):
 def is_game_won(tiles, score):
     for x in range(SIDES):
         for y in range(SIDES):
-            if tiles[x][y].value == 16:
+            if tiles[x][y].value == 2048:
                 surface = pygame.Surface(screen.get_size())
                 surface.fill(TILE_COLOR['2048'])
 
