@@ -103,11 +103,7 @@ class Tile:
             # Tile Text
             text = str(self.old_value)
             pygame.draw.rect(tile, TILE_COLOR[text], tile_rect, border_radius=RADIUS)
-            font = pygame.font.SysFont('Google Sans', int(self.size * 0.8 - FONT_OFFSET * (len(text) - 1)), bold=True)
-            text_surf = font.render(text, True, TEXT_COLOR[text])
-            text_rect = text_surf.get_rect()
-            text_rect.center = tile_rect.center
-            tile.blit(text_surf, text_rect)
+            draw_text(tile, text, int(self.size * 0.8 - FONT_OFFSET * (len(text) - 1)), TEXT_COLOR[text])
 
             # Tile Position
             self.pos = self.pos.lerp(self.dest, SPEED)
@@ -143,19 +139,9 @@ def is_game_over(tiles, score):
     surface = pygame.Surface(screen.get_size())
     surface.fill((255, 255, 255))
 
-    font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES + 1), bold=True)
-    text_surf = font.render('GAME OVER!', True, (0, 0, 0))
-    text_rect = text_surf.get_rect()
-    text_rect.midbottom = surface.get_rect().center
-    text_rect.bottom -= 20
-    surface.blit(text_surf, text_rect)
+    draw_text(surface, 'GAME OVER!', FONT_OFFSET * (SIDES + 1), (0, 0, 0), -SIDES * FONT_OFFSET)
 
-    font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES - 1), bold=True)
-    text_surf = font.render('SCORE: ' + str(score), True, (0, 0, 0))
-    text_rect = text_surf.get_rect()
-    text_rect.midtop = surface.get_rect().center
-    text_rect.bottom += 20
-    surface.blit(text_surf, text_rect)
+    draw_text(surface, 'SCORE: ' + str(score), FONT_OFFSET * (SIDES - 1), (0, 0, 0), SIDES * FONT_OFFSET)
 
     return True, surface
 
@@ -167,19 +153,9 @@ def is_game_won(tiles, score):
                 surface = pygame.Surface(screen.get_size())
                 surface.fill(TILE_COLOR['2048'])
 
-                font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES + 1), bold=True)
-                text_surf = font.render('YOU WON!', True, TEXT_COLOR['2048'])
-                text_rect = text_surf.get_rect()
-                text_rect.midbottom = surface.get_rect().center
-                text_rect.bottom -= 20
-                surface.blit(text_surf, text_rect)
+                draw_text(surface, 'YOU WON!', FONT_OFFSET * (SIDES + 1), TEXT_COLOR['2048'], -SIDES * FONT_OFFSET)
 
-                font = pygame.font.SysFont('Google Sans', FONT_OFFSET * (SIDES - 1), bold=True)
-                text_surf = font.render('SCORE: ' + str(score), True, TEXT_COLOR['2048'])
-                text_rect = text_surf.get_rect()
-                text_rect.midtop = surface.get_rect().center
-                text_rect.bottom += 20
-                surface.blit(text_surf, text_rect)
+                draw_text(surface, 'SCORE: ' + str(score), FONT_OFFSET * (SIDES - 1), TEXT_COLOR['2048'], SIDES * FONT_OFFSET)
 
                 return True, surface
 
@@ -264,6 +240,15 @@ def print_tiles(tiles):
             print(tiles[y][x].value, end='\t')
         print('\n')
     print('\n')
+
+# Display Text
+def draw_text(surface, text, size, color, offset=0):
+    font = pygame.font.Font('./font.ttf', size)
+    text_surf = font.render(text, True, color)
+    text_rect = text_surf.get_rect()
+    text_rect.center = surface.get_rect().center
+    text_rect.bottom += offset
+    surface.blit(text_surf, text_rect)
 
 # Init
 pygame.init()
